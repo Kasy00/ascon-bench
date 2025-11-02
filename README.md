@@ -23,6 +23,15 @@ and message authentication.
     pip install -r requirements.txt
 ```
 
+After installing the requirements, install the local package in "editable" mode so the `ascon` package is available
+to the benchmark scripts (this makes imports like `from ascon.aead import Ascon128` work without reinstalling after edits):
+
+```
+    pip install -e .
+```
+
+This installs the project into your environment in development/editable mode — changes to the source are reflected immediately.
+
 ## Running Benchmarks Manually
 Run individual benchmarks using bench_cli.py
 
