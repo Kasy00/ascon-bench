@@ -34,7 +34,6 @@ class Ascon128:
         self.key = key
 
     def _init_state(self, nonce):
-        # Concatenate key and nonce correctly (16 + 16 = 32 bytes)
         state_bytes = self.key + nonce
         state_bytes = state_bytes.ljust(40, b'\x00')  # pad to 40 bytes for 5xQ
         state = bytes_to_state(state_bytes)
@@ -42,49 +41,40 @@ class Ascon128:
 
 
     def encrypt(self, nonce: bytes, plaintext: bytes, aad: bytes=b'') -> Tuple[bytes, bytes]:
-        # returns (ciphertext, tag)
         state = self._init_state(nonce)
-        rate = 8  # bytes rate for ASCON-128
-        # process AAD
+        rate = 8
         if aad:
             padded = pad(aad, rate)
             for i in range(0, len(padded), rate):
                 block = padded[i:i+rate]
-                # XOR into state[0], permutation p_b
                 import struct
                 w = int.from_bytes(block.ljust(8,b'\x00'), 'big')
                 state[0] ^= w
                 ascon_permutation(state, rounds=6)
-        # domain separation (per spec) -> simplified
-        # process plaintext
+
         ciphertext = b''
         padded = pad(plaintext, rate)
         for i in range(0, len(padded), rate):
             block = padded[i:i+rate]
             import struct
-            # extract s0
             s0 = state[0]
             s0_bytes = s0.to_bytes(8, 'big')
             cblock = xor_bytes(block, s0_bytes[:len(block)])
-            ciphertext += cblock[:len(block)]  # cut padding for last block
-            # XOR plaintext into state
+            ciphertext += cblock[:len(block)]
+
             pblock = int.from_bytes(block.ljust(8,b'\x00'), 'big')
             state[0] = int.from_bytes(s0_bytes, 'big') ^ pblock
             ascon_permutation(state, rounds=6)
-        # finalize and produce tag (very simplified)
+
         import struct
         k0,k1 = struct.unpack('>2Q', self.key)
         state[1] ^= k0
         state[2] ^= k1
         ascon_permutation(state, rounds=12)
-        tag = state_to_bytes(state)[:16]  # first 128-bit tag
+        tag = state_to_bytes(state)[:16]
         return ciphertext, tag
 
     def decrypt(self, nonce: bytes, ciphertext: bytes, aad: bytes, tag: bytes) -> Tuple[bytes, bool]:
-        # Inverse of encrypt (for correctness tests). For brevity we implement same flow and then verify tag.
-        # (Real implementation must manage padding and truncation carefully.)
-        # This function is intended for functional correctness tests in bench.
-        # We'll re-run encryption and compare tag.
         pt, calc_tag = self.encrypt(nonce, ciphertext, aad)
         ok = calc_tag == tag
         return pt, ok

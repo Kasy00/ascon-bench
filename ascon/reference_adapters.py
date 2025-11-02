@@ -12,11 +12,8 @@ class AESGCMAdapter:
             raise RuntimeError('cryptography not installed')
         self._a = AESGCM(key)
 
-    # use nonce, plaintext, ad - no extra key param
     def encrypt(self, nonce: bytes, plaintext: bytes, ad: bytes = b'') -> tuple[bytes, bytes]:
-        # AESGCM.encrypt returns ciphertext || tag (tag is 16 bytes)
         data = self._a.encrypt(nonce, plaintext, ad)
-        # split tag (last 16 bytes)
         ct, tag = data[:-16], data[-16:]
         return ct, tag
 
@@ -43,15 +40,13 @@ class HMACSHA256Adapter:
         h.update(message)
         return h.finalize()
 
-# Simple functional wrappers expected by bench_cli
 def aes_gcm_encrypt(key: bytes, nonce: bytes, plaintext: bytes, ad: bytes = b'') -> bytes:
     a = AESGCMAdapter(key)
     ct, tag = a.encrypt(nonce, plaintext, ad)
-    return ct + tag  # return combined ciphertext||tag for callers that expect that
+    return ct + tag
 
 def aes_gcm_decrypt(key: bytes, nonce: bytes, ciphertext_and_tag: bytes, ad: bytes = b'') -> bytes:
     a = AESGCMAdapter(key)
-    # split tag assuming 16-byte tag
     ct, tag = ciphertext_and_tag[:-16], ciphertext_and_tag[-16:]
     pt, ok = a.decrypt(nonce, ct, tag, ad)
     return pt

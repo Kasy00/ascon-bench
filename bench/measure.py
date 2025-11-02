@@ -7,9 +7,8 @@ import statistics
 import matplotlib.pyplot as plt
 
 def get_memory_usage_mb():
-    # Use tracemalloc for memory tracking (built-in module)
     current, peak = tracemalloc.get_traced_memory()
-    return peak / (1024 * 1024)  # Convert bytes to MB
+    return peak / (1024 * 1024)
 
  # pomiary czasu/CPU/pamięci, CSV export, plot
 
@@ -39,7 +38,7 @@ def measure_function(fn: Callable, args: tuple=(), kwargs: dict=None, runs: int=
         "wall_time_std": statistics.pstdev(times),
         "cpu_time_mean": statistics.mean(cpu_times),
         "mem_peak_mean": statistics.mean(mem_peaks),
-        "throughput_MBps": None  # caller can compute based on bytes/time
+        "throughput_MBps": None
     }
     return result
 

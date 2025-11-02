@@ -4,7 +4,6 @@ from typing import List
 # Implementacja oparta na specyfikacji ASCON (permutation p_12 / p_6 parametry).
 # Referencja: Ascon spec. See: ascon-spec-round2.pdf
 
-# constants
 ROUND_CONSTANTS = [
     0x000000000000000f,0x000000000000000e,0x000000000000000d,0x000000000000000c,
     0x000000000000000b,0x000000000000000a,0x0000000000000009,0x0000000000000008,
@@ -23,11 +22,10 @@ def ascon_permutation(state: List[int], rounds: int = 12) -> None:
     """
     assert len(state) == 5
     for r in range(12-rounds, 12):
-        # add round constant
+
         rc = ROUND_CONSTANTS[r]
         state[2] ^= rc
 
-        # substitution layer (S-box) - 5-word S-box (from spec)
         x0,x1,x2,x3,x4 = state
         x0 ^= x4; x4 ^= x3; x2 ^= x1
         t0 = (~x0) & x1
@@ -38,7 +36,6 @@ def ascon_permutation(state: List[int], rounds: int = 12) -> None:
         x0 ^= t1; x1 ^= t2; x2 ^= t3; x3 ^= t4; x4 ^= t0
         x1 ^= x0; x0 ^= x4; x3 ^= x2; x2 = ~x2 & ((1<<64)-1)
 
-        # linear diffusion layer (rotations)
         state[0] = x0 ^ rol(x0, 19) ^ rol(x0, 28)
         state[1] = x1 ^ rol(x1, 61) ^ rol(x1, 39)
         state[2] = x2 ^ rol(x2, 1)  ^ rol(x2, 6)
